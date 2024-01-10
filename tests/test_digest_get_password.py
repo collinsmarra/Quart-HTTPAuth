@@ -1,0 +1,254 @@
+import unittest
+import re
+import pytest
+from hashlib import md5 as basic_md5
+
+from quart import Quart
+import quart_flask_patch
+from src.flask_httpauth import HTTPDigestAuth
+from werkzeug.http import parse_dict_header
+
+def md5(str):
+    if type(str).__name__ == 'str':
+        str = str.encode('utf-8')
+    return basic_md5(str)
+
+
+def get_ha1(user, pw, realm):
+    a1 = user + ":" + realm + ":" + pw
+    return md5(a1).hexdigest()
+
+
+class HTTPAuthTestCase(unittest.TestCase):
+    async def setUp(self):
+        app = Quart(__name__)
+        app.config['SECRET_KEY'] = 'my secret'
+
+        digest_auth = HTTPDigestAuth()
+
+        @digest_auth.get_password
+        async def get_digest_password_2(username):
+            if username == 'susan':
+                return 'hello'
+            elif username == 'john':
+                return 'bye'
+            else:
+                return None
+
+        @app.route('/')
+        async def index():
+            return 'index'
+
+        @app.route('/digest')
+        @digest_auth.login_required
+        async def digest_auth_route():
+            return 'digest_auth:' + digest_auth.username()
+
+        self.app = app
+        self.digest_auth = digest_auth
+        self.client = app.test_client()
+
+    def test_constructor(self):
+        d = HTTPDigestAuth()
+        assert d.qop == ['auth']
+        assert d.algorithm == 'MD5'
+        d = HTTPDigestAuth(qop=None)
+        assert d.qop is None
+        d = HTTPDigestAuth(qop='auth')
+        assert d.qop == ['auth']
+        d = HTTPDigestAuth(qop=['foo', 'bar'])
+        assert d.qop == ['foo', 'bar']
+        d = HTTPDigestAuth(qop='foo,bar, baz')
+        assert d.qop == ['foo', 'bar', 'baz']
+        d = HTTPDigestAuth(algorithm='md5')
+        assert d.algorithm == 'MD5'
+        d = HTTPDigestAuth(algorithm='md5-sess')
+        assert d.algorithm == 'MD5-Sess'
+        with pytest.raises(ValueError):
+            HTTPDigestAuth(algorithm='foo')
+
+    async def test_digest_auth_prompt(self):
+        response = await self.client.get('/digest')
+        self.assertEqual(response.status_code, 401)
+        self.assertTrue('WWW-Authenticate' in response.headers)
+        self.assertTrue(re.match(r'^Digest realm="Authentication Required",'
+                                 r'nonce="[0-9a-f]+",opaque="[0-9a-f]+",'
+                                 r'algorithm="MD5",qop="auth"$',
+                                 response.headers['WWW-Authenticate']))
+
+    async def test_digest_auth_ignore_options(self):
+        response = await self.client.options('/digest')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('WWW-Authenticate' not in response.headers)
+
+    async def test_digest_auth_login_valid(self):
+        response = await self.client.get('/digest')
+        self.assertTrue(response.status_code == 401)
+        header = response.headers.get('WWW-Authenticate')
+        auth_type, auth_info = header.split(None, 1)
+        d = parse_dict_header(auth_info)
+
+        a1 = 'john:' + d['realm'] + ':bye'
+        ha1 = md5(a1).hexdigest()
+        a2 = 'GET:/digest'
+        ha2 = md5(a2).hexdigest()
+        a3 = ha1 + ':' + d['nonce'] + ':00000001:foobar:auth:' + ha2
+        auth_response = md5(a3).hexdigest()
+
+        response = self.client.get(
+            '/digest', headers={
+                'Authorization': 'Digest username="john",realm="{0}",'
+                                 'nonce="{1}",uri="/digest",qop=auth,'
+                                 'nc=00000001,cnonce="foobar",response="{2}",'
+                                 'opaque="{3}"'.format(d['realm'],
+                                                       d['nonce'],
+                                                       auth_response,
+                                                       d['opaque'])})
+        self.assertEqual(response.data, b'digest_auth:john')
+
+    async def test_digest_auth_md5_sess_login_valid(self):
+        self.digest_auth.algorithm = 'MD5-Sess'
+
+        response = await self.client.get('/digest')
+        self.assertTrue(response.status_code == 401)
+        header = response.headers.get('WWW-Authenticate')
+        auth_type, auth_info = header.split(None, 1)
+        d = parse_dict_header(auth_info)
+
+        a1 = 'john:' + d['realm'] + ':bye'
+        ha1 = md5(
+            md5(a1).hexdigest() + ':' + d['nonce'] + ':foobar').hexdigest()
+        a2 = 'GET:/digest'
+        ha2 = md5(a2).hexdigest()
+        a3 = ha1 + ':' + d['nonce'] + ':00000001:foobar:auth:' + ha2
+        auth_response = md5(a3).hexdigest()
+
+        response = self.client.get(
+            '/digest', headers={
+                'Authorization': 'Digest username="john",realm="{0}",'
+                                 'nonce="{1}",uri="/digest",qop=auth,'
+                                 'nc=00000001,cnonce="foobar",response="{2}",'
+                                 'opaque="{3}"'.format(d['realm'],
+                                                       d['nonce'],
+                                                       auth_response,
+                                                       d['opaque'])})
+        self.assertEqual(response.data, b'digest_auth:john')
+
+    async def test_digest_auth_login_bad_realm(self):
+        response = await self.client.get('/digest')
+        self.assertTrue(response.status_code == 401)
+        header = response.headers.get('WWW-Authenticate')
+        auth_type, auth_info = header.split(None, 1)
+        d = parse_dict_header(auth_info)
+
+        a1 = 'john:' + 'Wrong Realm' + ':bye'
+        ha1 = md5(a1).hexdigest()
+        a2 = 'GET:/digest'
+        ha2 = md5(a2).hexdigest()
+        a3 = ha1 + ':' + d['nonce'] + ':00000001:foobar:auth:' + ha2
+        auth_response = md5(a3).hexdigest()
+
+        response = self.client.get(
+            '/digest', headers={
+                'Authorization': 'Digest username="john",realm="{0}",'
+                                 'nonce="{1}",uri="/digest",qop=auth,'
+                                 'nc=00000001,cnonce="foobar",response="{2}",'
+                                 'opaque="{3}"'.format(d['realm'],
+                                                       d['nonce'],
+                                                       auth_response,
+                                                       d['opaque'])})
+        self.assertEqual(response.status_code, 401)
+        self.assertTrue('WWW-Authenticate' in response.headers)
+        self.assertTrue(re.match(r'^Digest realm="Authentication Required",'
+                                 r'nonce="[0-9a-f]+",opaque="[0-9a-f]+",'
+                                 r'algorithm="MD5",qop="auth"$',
+                                 response.headers['WWW-Authenticate']))
+
+    async def test_digest_auth_login_invalid2(self):
+        response = await self.client.get('/digest')
+        self.assertEqual(response.status_code, 401)
+        header = await response.headers.get('WWW-Authenticate')
+        auth_type, auth_info = header.split(None, 1)
+        d = parse_dict_header(auth_info)
+
+        a1 = 'david:' + 'Authentication Required' + ':bye'
+        ha1 = md5(a1).hexdigest()
+        a2 = 'GET:/digest'
+        ha2 = md5(a2).hexdigest()
+        a3 = ha1 + ':' + d['nonce'] + ':00000001:foobar:auth:' + ha2
+        auth_response = md5(a3).hexdigest()
+
+        response = self.client.get(
+            '/digest', headers={
+                'Authorization': 'Digest username="john",realm="{0}",'
+                                 'nonce="{1}",uri="/digest",qop=auth,'
+                                 'nc=00000001,cnonce="foobar",response="{2}",'
+                                 'opaque="{3}"'.format(d['realm'],
+                                                       d['nonce'],
+                                                       auth_response,
+                                                       d['opaque'])})
+        self.assertEqual(response.status_code, 401)
+        self.assertTrue('WWW-Authenticate' in response.headers)
+        self.assertTrue(re.match(r'^Digest realm="Authentication Required",'
+                                 r'nonce="[0-9a-f]+",opaque="[0-9a-f]+",'
+                                 r'algorithm="MD5",qop="auth"$',
+                                 response.headers['WWW-Authenticate']))
+
+    async def test_digest_generate_ha1(self):
+        ha1 = await self.digest_auth.generate_ha1('pawel', 'test')
+        ha1_expected = get_ha1('pawel', 'test', self.digest_auth.realm)
+        self.assertEqual(ha1, ha1_expected)
+
+    async def test_digest_custom_nonce_checker(self):
+        @self.digest_auth.generate_nonce
+        def noncemaker():
+            return 'not a good nonce'
+
+        @self.digest_auth.generate_opaque
+        def opaquemaker():
+            return 'some opaque'
+
+        verify_nonce_called = []
+
+        @self.digest_auth.verify_nonce
+        def verify_nonce(provided_nonce):
+            verify_nonce_called.append(provided_nonce)
+            return True
+
+        verify_opaque_called = []
+
+        @self.digest_auth.verify_opaque
+        def verify_opaque(provided_opaque):
+            verify_opaque_called.append(provided_opaque)
+            return True
+
+        response = await self.client.get('/digest')
+        self.assertEqual(response.status_code, 401)
+        header = response.headers.get('WWW-Authenticate')
+        auth_type, auth_info = header.split(None, 1)
+        d = parse_dict_header(auth_info)
+
+        self.assertEqual(d['nonce'], 'not a good nonce')
+        self.assertEqual(d['opaque'], 'some opaque')
+
+        a1 = 'john:' + d['realm'] + ':bye'
+        ha1 = md5(a1).hexdigest()
+        a2 = 'GET:/digest'
+        ha2 = md5(a2).hexdigest()
+        a3 = ha1 + ':' + d['nonce'] + ':00000001:foobar:auth:' + ha2
+        auth_response = md5(a3).hexdigest()
+
+        response = await self.client.get(
+            '/digest', headers={
+                'Authorization': 'Digest username="john",realm="{0}",'
+                                 'nonce="{1}",uri="/digest",qop=auth,'
+                                 'nc=00000001,cnonce="foobar",response="{2}",'
+                                 'opaque="{3}"'.format(d['realm'],
+                                                       d['nonce'],
+                                                       auth_response,
+                                                       d['opaque'])})
+        self.assertEqual(response.data, b'digest_auth:john')
+        self.assertEqual(verify_nonce_called, ['not a good nonce'],
+                         "Should have verified the nonce.")
+        self.assertEqual(verify_opaque_called, ['some opaque'],
+                         "Should have verified the opaque.")
