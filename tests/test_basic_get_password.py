@@ -1,66 +1,82 @@
-import unittest
 import base64
-import quart_flask_patch
 from quart import Quart
-from src.flask_httpauth import HTTPBasicAuth
+from src.quart_httpauth import HTTPBasicAuth
+import pytest
 
 
-class HTTPAuthTestCase(unittest.TestCase):
-    def setUp(self):
-        app = Quart(__name__)
-        app.config['SECRET_KEY'] = 'my secret'
+@pytest.fixture(name="testapp")
+def app():
+    app = Quart(__name__)
+    app.config["SECRET_KEY"] = "my secret"
 
-        basic_auth = HTTPBasicAuth()
+    basic_auth = HTTPBasicAuth()
 
-        @basic_auth.get_password
-        def get_basic_password(username):
-            if username == 'john':
-                return 'hello'
-            elif username == 'susan':
-                return 'bye'
-            else:
-                return None
+    @basic_auth.get_password
+    async def get_basic_password(username):
+        if username == "john":
+            return "hello"
+        elif username == "susan":
+            return "bye"
+        else:
+            return None
 
-        @app.route('/')
-        def index():
-            return 'index'
+    @app.route("/")
+    async def index():
+        return "index"
 
-        @app.route('/basic')
-        @basic_auth.login_required
-        def basic_auth_route():
-            return 'basic_auth:' + basic_auth.username()
+    @app.route("/basic")
+    @basic_auth.login_required
+    async def basic_auth_route():
+        return "basic_auth:" + basic_auth.username()
 
-        self.app = app
-        self.basic_auth = basic_auth
-        self.client = app.test_client()
+    return app
 
-    async def test_no_auth(self):
-        response = await self.client.get('/')
-        self.assertEqual(response.data.decode('utf-8'), 'index')
 
-    async def test_basic_auth_prompt(self):
-        response = await self.client.get('/basic')
-        self.assertEqual(response.status_code, 401)
-        self.assertTrue('WWW-Authenticate' in response.headers)
-        self.assertEqual(response.headers['WWW-Authenticate'],
-                         'Basic realm="Authentication Required"')
+@pytest.mark.asyncio
+async def test_no_auth(testapp):
+    client = testapp.test_client()
+    response = await client.get("/")
+    response_data = await response.data
+    assert response_data.decode("utf-8") == "index"
 
-    async def test_basic_auth_ignore_options(self):
-        response = await self.client.options('/basic')
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue('WWW-Authenticate' not in response.headers)
 
-    async def test_basic_auth_login_valid(self):
-        creds = base64.b64encode(b'john:hello').decode('utf-8')
-        response = await self.client.get(
-            '/basic', headers={'Authorization': 'Basic ' + creds})
-        self.assertEqual(response.data.decode('utf-8'), 'basic_auth:john')
+@pytest.mark.asyncio
+async def test_basic_auth_prompt(testapp):
+    client = testapp.test_client()
+    response = await client.get("/basic")
+    assert response.status_code == 401
+    assert "WWW-Authenticate" in response.headers
+    assert response.headers["WWW-Authenticate"] == \
+        'Basic realm="Authentication Required"'
 
-    async def test_basic_auth_login_invalid(self):
-        creds = base64.b64encode(b'john:bye').decode('utf-8')
-        response = await self.client.get(
-            '/basic', headers={'Authorization': 'Basic ' + creds})
-        self.assertEqual(response.status_code, 401)
-        self.assertTrue('WWW-Authenticate' in response.headers)
-        self.assertEqual(response.headers['WWW-Authenticate'],
-                         'Basic realm="Authentication Required"')
+
+@pytest.mark.asyncio
+async def test_basic_auth_ignore_options(testapp):
+    client = testapp.test_client()
+    response = await client.options("/basic")
+    assert response.status_code == 200
+    assert "WWW-Authenticate" not in response.headers
+
+
+@pytest.mark.asyncio
+async def test_basic_auth_login_valid(testapp):
+    client = testapp.test_client()
+    creds = base64.b64encode(b"john:hello").decode("utf-8")
+    response = await client.get(
+        "/basic", headers={"Authorization": "Basic " + creds}
+    )
+    response_data = await response.data
+    assert response_data.decode("utf-8") == "basic_auth:john"
+
+
+@pytest.mark.asyncio
+async def test_basic_auth_login_invalid(testapp):
+    client = testapp.test_client()
+    creds = base64.b64encode(b"john:bye").decode("utf-8")
+    response = await client.get(
+        "/basic", headers={"Authorization": "Basic " + creds}
+    )
+    assert response.status_code == 401
+    assert "WWW-Authenticate" in response.headers
+    assert response.headers["WWW-Authenticate"] ==\
+        'Basic realm="Authentication Required"'
