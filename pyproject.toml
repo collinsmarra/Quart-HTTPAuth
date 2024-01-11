@@ -1,0 +1,48 @@
+[project]
+name = "Quart-HTTPAuth"
+version = "0.1.0"
+authors = [
+    { name = "Miguel Grinberg", email = "miguel.grinberg@gmail.com" }
+]
+description = "Quart-HTTPAuth is a HTTP authentication library for Quart.This was modified from Flask-HTTPAuth."
+classifiers = [
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: MicroPython",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "quart",
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.urls]
+Homepage = "https://github.com/makejani/Quart-HTTPAuth"
+"Bug Tracker" = "https://github.com/makejani/Quart-HTTPAuth/issues"
+
+[project.optional-dependencies]
+docs = [
+    "sphinx",
+]
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+py-modules = [
+    "quart_httpauth",
+]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[build-system]
+requires = [
+    "setuptools",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
