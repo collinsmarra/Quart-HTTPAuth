@@ -1,7 +1,7 @@
 import pytest
 import base64
 from quart import Quart
-from src.flask_httpauth import HTTPTokenAuth
+from src.quart_httpauth import HTTPTokenAuth
 
 
 @pytest.fixture(name="testapp")

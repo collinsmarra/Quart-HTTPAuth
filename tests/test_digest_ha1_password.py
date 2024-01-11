@@ -1,7 +1,7 @@
 import pytest
 from hashlib import md5
 from quart import Quart
-from src.flask_httpauth import HTTPDigestAuth
+from src.quart_httpauth import HTTPDigestAuth
 from werkzeug.http import parse_dict_header
 
 

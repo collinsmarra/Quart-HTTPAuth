@@ -1,6 +1,6 @@
 import re
 from quart import Quart
-from src.flask_httpauth import HTTPDigestAuth
+from src.quart_httpauth import HTTPDigestAuth
 import pytest
 
 
