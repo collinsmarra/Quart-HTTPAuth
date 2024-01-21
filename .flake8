@@ -1,0 +1,6 @@
+[flake8]
+ignore=
+    # line too long
+    E402,
+    #line break after binary operator
+    W503
