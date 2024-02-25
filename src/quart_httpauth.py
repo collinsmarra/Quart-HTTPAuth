@@ -1,8 +1,9 @@
 """
-flask_httpauth
+quart_httpauth
 ==================
 
-This module provides Basic and Digest HTTP authentication for Flask routes.
+This module provides Basic and Digest HTTP authentication for Quart routes.
+This was modified from FlaskHTTPAuth.
 
 :copyright: (C) 2014 by Miguel Grinberg.
 :license:   MIT, see LICENSE for more details.
@@ -111,7 +112,6 @@ class HTTPAuth(object):
         password = None
 
         if auth and auth.username:
-            # password = self.ensure_sync(self.get_password_callback)(
             password = await self.ensure_async(self.get_password_callback)(
                 auth.username
             )
@@ -129,7 +129,6 @@ class HTTPAuth(object):
             user = auth
         if self.get_user_roles_callback is None:  # pragma: no cover
             raise ValueError("get_user_roles callback is not defined")
-        #: user_roles = self.ensure_sync(self.get_user_roles_callback)(user)
         user_roles = await self.ensure_async(self.get_user_roles_callback)(
             user
         )
@@ -207,7 +206,6 @@ class HTTPAuth(object):
 
     def ensure_async(self, f):
         try:
-            #: return current_app.ensure_sync(f)
             return current_app.ensure_async(f)
         except AttributeError:  # pragma: no cover
             return f
@@ -262,7 +260,6 @@ class HTTPBasicAuth(HTTPAuth):
             username = ""
             client_password = ""
         if self.verify_password_callback:
-            #: return self.ensure_sync(self.verify_password_callback)(
             return await self.ensure_async(self.verify_password_callback)(
                 username, client_password
             )
@@ -270,12 +267,10 @@ class HTTPBasicAuth(HTTPAuth):
             return
         if self.hash_password_callback:
             try:
-                # client_password = self.ensure_sync(
                 client_password = await self.ensure_async(
                     self.hash_password_callback
                 )(client_password)
             except TypeError:
-                # client_password = self.ensure_sync(
                 client_password = await self.ensure_async(
                     self.hash_password_callback
                 )(username, client_password)
@@ -456,7 +451,6 @@ class HTTPTokenAuth(HTTPAuth):
     async def authenticate(self, auth, stored_password):
         token = getattr(auth, "token", "")
         if self.verify_token_callback:
-            # return self.ensure_sync(self.verify_token_callback)(token)
             return await self.ensure_async(self.verify_token_callback)(token)
 
 
