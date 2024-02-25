@@ -3,7 +3,21 @@ Quart-HTTPAuth
 
 [![Build status](https://github.com/miguelgrinberg/Flask-HTTPAuth/workflows/build/badge.svg)](https://github.com/miguelgrinberg/Flask-HTTPAuth/actions) [![codecov](https://codecov.io/gh/miguelgrinberg/Flask-HTTPAuth/branch/master/graph/badge.svg?token=KeU2002DHo)](https://codecov.io/gh/miguelgrinberg/Flask-HTTPAuth)
 
-Simple extension that provides Basic, Digest and Token HTTP authentication for Quart routes.
+**Quart-HTTPAuth: An Authentication Extension for Quart**
+
+Welcome to Quart-HTTPAuth, a simple extension that provides Basic, Digest, and Token HTTP authentication support to Quart.
+This project is a modified version of Flask-HTTPAuth, specifically for use with Quart.
+
+I developed this extension because I wanted to use Quart and Flask-HTTPAuth in a single project, but encountered issues when using `Quart.quart_flask_patch` with Flask-HTTPAuth after upgrading to `Quart=='0.19.0'`.My existing application, which functioned well with `Quart==0.18.4` and Flask-HTTPAuth, would no longer work. To avoid the hassle of migrating to a new authentication extension, I opted to create this modified version of Flask-HTTPAuth that plays seamlessly with Quart.
+
+### Features
+
+* Supports Basic, Digest, and Token HTTP authentication
+* Easy to use and integrate with Quart
+* Works exactly how you'd expect Flask-HTTPAuth to.
+
+
+#### ⚠️ Caution: Please exercise discretion and use Quart-HTTPAuth at your own risk.
 
 
 Basic authentication example
