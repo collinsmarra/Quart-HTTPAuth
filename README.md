@@ -1,7 +1,7 @@
 Quart-HTTPAuth
 ==============
 
-[![Build status](https://github.com/miguelgrinberg/Flask-HTTPAuth/workflows/build/badge.svg)](https://github.com/miguelgrinberg/Flask-HTTPAuth/actions) [![codecov](https://codecov.io/gh/miguelgrinberg/Flask-HTTPAuth/branch/master/graph/badge.svg?token=KeU2002DHo)](https://codecov.io/gh/miguelgrinberg/Flask-HTTPAuth)
+[![Build status](https://github.com/collinsmarra/Quart-HTTPAuth/workflows/build/badge.svg)](https://github.com/collinsmarra/Quart-HTTPAuth/actions) [![codecov](https://codecov.io/gh/collinsmarra/Quart-HTTPAuth/graph/badge.svg?token=USMED5G5O2)](https://codecov.io/gh/collinsmarra/Quart-HTTPAuth)
 
 **Quart-HTTPAuth: An Authentication Extension for Quart**
 
