@@ -22,8 +22,8 @@ file = "README.md"
 content-type = "text/markdown"
 
 [project.urls]
-Homepage = "https://github.com/makejani/Quart-HTTPAuth"
-"Bug Tracker" = "https://github.com/makejani/Quart-HTTPAuth/issues"
+Homepage = "https://github.com/collinsmarra/Quart-HTTPAuth"
+"Bug Tracker" = "https://github.com/collinsmarra/Quart-HTTPAuth/issues"
 
 [project.optional-dependencies]
 docs = [

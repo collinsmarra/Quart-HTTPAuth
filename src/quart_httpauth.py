@@ -3,7 +3,7 @@ quart_httpauth
 ==================
 
 This module provides Basic and Digest HTTP authentication for Quart routes.
-This was modified from FlaskHTTPAuth.
+This was modified from Flask-HTTPAuth.
 
 :copyright: (C) 2014 by Miguel Grinberg.
 :license:   MIT, see LICENSE for more details.
