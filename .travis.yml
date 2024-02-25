@@ -20,6 +20,10 @@ matrix:
           env: TOXENV=pypy3
         - python: 3.8
           env: TOXENV=docs
+        - python: 3.10
+          env: TOXENV=py310
+        - python: 3.11
+          env: TOXENV=py311
 install:
   - pip install tox 
 script:
