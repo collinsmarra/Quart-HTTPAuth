@@ -1,8 +1,8 @@
 [project]
 name = "Quart-HTTPAuth"
-version = "0.1.0"
+version = "1.0.0"
 authors = [
-    { name = "Miguel Grinberg", email = "miguel.grinberg@gmail.com" }
+    { name = "Collins Kiplagat", email = "collinskiplagat8@gmail.com" }
 ]
 description = "Quart-HTTPAuth is a HTTP authentication library for Quart.This was modified from Flask-HTTPAuth."
 classifiers = [
