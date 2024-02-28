@@ -20,6 +20,13 @@ I developed this extension because I wanted to use Quart and Flask-HTTPAuth in a
 #### ⚠️ Caution: Please exercise discretion and use Quart-HTTPAuth at your own risk.
 
 
+### Installation
+
+```bash
+pip install git+https://github.com/collinsmarra/Quart-HTTPAuth.git
+```
+
+
 Basic authentication example
 ----------------------------
 
@@ -57,7 +64,7 @@ Digest authentication example
 
 ```python
 from quart import Quart
-from flask_httpauth import HTTPDigestAuth
+from quart_httpauth import HTTPDigestAuth
 
 app = Quart(__name__)
 app.config['SECRET_KEY'] = 'secret key here'
